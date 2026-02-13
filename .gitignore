@@ -1,0 +1,35 @@
+# Archivos compilados
+target/
+*.class
+
+# Archivos de log
+*.log
+
+# Archivos de IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Archivos de configuración local (¡MUY IMPORTANTE!)
+application-dev.properties
+application-local.properties
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# Archivos temporales
+*.tmp
+*.bak
+*.swp
+*~
+
+# Sistema operativo
+Thumbs.db
+.DS_Store
+
+# Credenciales locales (NO SUBIR)
+src/main/resources/application.properties
+```
