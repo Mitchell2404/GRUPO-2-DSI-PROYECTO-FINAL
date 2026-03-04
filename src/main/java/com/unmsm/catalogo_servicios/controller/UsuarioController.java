@@ -1,14 +1,25 @@
 package com.unmsm.catalogo_servicios.controller;
 
-import com.unmsm.catalogo_servicios.model.Usuario;
-import com.unmsm.catalogo_servicios.service.UsuarioService;
-import jakarta.validation.Valid;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.unmsm.catalogo_servicios.exception.ResourceNotFoundException;
+import com.unmsm.catalogo_servicios.model.Usuario;
+import com.unmsm.catalogo_servicios.service.UsuarioService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/usuarios")
@@ -30,7 +41,7 @@ public class UsuarioController {
     public ResponseEntity<Usuario> buscarPorId(@PathVariable Long id) {
         return usuarioService.buscarPorId(id)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con ID: " + id));
     }
     
     // GET /api/usuarios/correo/{correo} - Buscar por correo
@@ -38,43 +49,31 @@ public class UsuarioController {
     public ResponseEntity<Usuario> buscarPorCorreo(@PathVariable String correo) {
         return usuarioService.buscarPorCorreo(correo)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con correo: " + correo));
     }
     
     // POST /api/usuarios - Crear nuevo usuario
     @PostMapping
-    public ResponseEntity<?> crear(@Valid @RequestBody Usuario usuario) {
-        try {
-            Usuario nuevoUsuario = usuarioService.guardar(usuario);
-            return ResponseEntity.status(HttpStatus.CREATED).body(nuevoUsuario);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<Usuario> crear(@Valid @RequestBody Usuario usuario) {
+        Usuario nuevoUsuario = usuarioService.guardar(usuario);
+        return ResponseEntity.status(HttpStatus.CREATED).body(nuevoUsuario);
     }
     
     // PUT /api/usuarios/{id} - Actualizar usuario
     @PutMapping("/{id}")
-    public ResponseEntity<?> actualizar(@PathVariable Long id, @Valid @RequestBody Usuario usuario) {
-        try {
-            if (!usuarioService.buscarPorId(id).isPresent()) {
-                return ResponseEntity.notFound().build();
-            }
-            usuario.setId(id);
-            Usuario usuarioActualizado = usuarioService.guardar(usuario);
-            return ResponseEntity.ok(usuarioActualizado);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+    public ResponseEntity<Usuario> actualizar(@PathVariable Long id, @Valid @RequestBody Usuario usuario) {
+        if (!usuarioService.buscarPorId(id).isPresent()) {
+            throw new ResourceNotFoundException("Usuario no encontrado con ID: " + id);
         }
+        usuario.setId(id);
+        Usuario usuarioActualizado = usuarioService.guardar(usuario);
+        return ResponseEntity.ok(usuarioActualizado);
     }
     
     // DELETE /api/usuarios/{id} - Eliminar usuario
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminar(@PathVariable Long id) {
-        try {
-            usuarioService.eliminar(id);
-            return ResponseEntity.ok().body("Usuario eliminado correctamente");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        usuarioService.eliminar(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.unmsm.catalogo_servicios.exception.ResourceNotFoundException;
 import com.unmsm.catalogo_servicios.model.SolicitudServicio;
 import com.unmsm.catalogo_servicios.model.enums.EstadoSolicitud;
 import com.unmsm.catalogo_servicios.service.SolicitudServicioService;
@@ -42,7 +43,7 @@ public class SolicitudServicioController {
     public ResponseEntity<SolicitudServicio> buscarPorId(@PathVariable Long id) {
         return solicitudService.buscarPorId(id)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElseThrow(() -> new ResourceNotFoundException("Solicitud no encontrada con ID: " + id));
     }
     
     // GET /api/solicitudes/usuario/{usuarioId} - Solicitudes de un usuario
@@ -61,47 +62,31 @@ public class SolicitudServicioController {
     
     // POST /api/solicitudes - Crear nueva solicitud
     @PostMapping
-    public ResponseEntity<?> crear(@Valid @RequestBody SolicitudServicio solicitud) {
-        try {
-            SolicitudServicio nuevaSolicitud = solicitudService.crear(solicitud);
-            return ResponseEntity.status(HttpStatus.CREATED).body(nuevaSolicitud);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<SolicitudServicio> crear(@Valid @RequestBody SolicitudServicio solicitud) {
+        SolicitudServicio nuevaSolicitud = solicitudService.crear(solicitud);
+        return ResponseEntity.status(HttpStatus.CREATED).body(nuevaSolicitud);
     }
     
     // PATCH /api/solicitudes/{id}/aprobar - Aprobar solicitud
     @PatchMapping("/{id}/aprobar")
-    public ResponseEntity<?> aprobar(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        try {
-            String observaciones = body.getOrDefault("observaciones", "");
-            SolicitudServicio solicitud = solicitudService.aprobar(id, observaciones);
-            return ResponseEntity.ok(solicitud);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<SolicitudServicio> aprobar(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        String observaciones = body.getOrDefault("observaciones", "");
+        SolicitudServicio solicitud = solicitudService.aprobar(id, observaciones);
+        return ResponseEntity.ok(solicitud);
     }
     
     // PATCH /api/solicitudes/{id}/rechazar - Rechazar solicitud
     @PatchMapping("/{id}/rechazar")
-    public ResponseEntity<?> rechazar(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        try {
-            String observaciones = body.getOrDefault("observaciones", "");
-            SolicitudServicio solicitud = solicitudService.rechazar(id, observaciones);
-            return ResponseEntity.ok(solicitud);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<SolicitudServicio> rechazar(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        String observaciones = body.getOrDefault("observaciones", "");
+        SolicitudServicio solicitud = solicitudService.rechazar(id, observaciones);
+        return ResponseEntity.ok(solicitud);
     }
     
     // DELETE /api/solicitudes/{id} - Eliminar solicitud
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminar(@PathVariable Long id) {
-        try {
-            solicitudService.eliminar(id);
-            return ResponseEntity.ok().body("Solicitud eliminada correctamente");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        solicitudService.eliminar(id);
+        return ResponseEntity.noContent().build();
     }
 }

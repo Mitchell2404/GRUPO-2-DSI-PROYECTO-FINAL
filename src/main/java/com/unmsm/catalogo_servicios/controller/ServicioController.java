@@ -1,15 +1,28 @@
 package com.unmsm.catalogo_servicios.controller;
 
-import com.unmsm.catalogo_servicios.model.Servicio;
-import com.unmsm.catalogo_servicios.model.enums.EstadoServicio;
-import com.unmsm.catalogo_servicios.service.ServicioService;
-import jakarta.validation.Valid;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.unmsm.catalogo_servicios.exception.ResourceNotFoundException;
+import com.unmsm.catalogo_servicios.model.Servicio;
+import com.unmsm.catalogo_servicios.model.enums.EstadoServicio;
+import com.unmsm.catalogo_servicios.service.ServicioService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/servicios")
@@ -38,7 +51,7 @@ public class ServicioController {
     public ResponseEntity<Servicio> buscarPorId(@PathVariable Long id) {
         return servicioService.buscarPorId(id)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElseThrow(() -> new ResourceNotFoundException("Servicio no encontrado con ID: " + id));
     }
     
     // GET /api/servicios/categoria/{categoriaId} - Servicios por categoría
@@ -64,49 +77,33 @@ public class ServicioController {
     
     // POST /api/servicios - Crear nuevo servicio
     @PostMapping
-    public ResponseEntity<?> crear(@Valid @RequestBody Servicio servicio) {
-        try {
-            Servicio nuevoServicio = servicioService.guardar(servicio);
-            return ResponseEntity.status(HttpStatus.CREATED).body(nuevoServicio);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<Servicio> crear(@Valid @RequestBody Servicio servicio) {
+        Servicio nuevoServicio = servicioService.guardar(servicio);
+        return ResponseEntity.status(HttpStatus.CREATED).body(nuevoServicio);
     }
     
     // PUT /api/servicios/{id} - Actualizar servicio
     @PutMapping("/{id}")
-    public ResponseEntity<?> actualizar(@PathVariable Long id, @Valid @RequestBody Servicio servicio) {
-        try {
-            if (!servicioService.buscarPorId(id).isPresent()) {
-                return ResponseEntity.notFound().build();
-            }
-            servicio.setId(id);
-            Servicio servicioActualizado = servicioService.guardar(servicio);
-            return ResponseEntity.ok(servicioActualizado);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+    public ResponseEntity<Servicio> actualizar(@PathVariable Long id, @Valid @RequestBody Servicio servicio) {
+        if (!servicioService.buscarPorId(id).isPresent()) {
+            throw new ResourceNotFoundException("Servicio no encontrado con ID: " + id);
         }
+        servicio.setId(id);
+        Servicio servicioActualizado = servicioService.guardar(servicio);
+        return ResponseEntity.ok(servicioActualizado);
     }
     
     // PATCH /api/servicios/{id}/estado - Cambiar estado (activar/desactivar)
     @PatchMapping("/{id}/estado")
-    public ResponseEntity<?> cambiarEstado(@PathVariable Long id, @RequestParam EstadoServicio estado) {
-        try {
-            Servicio servicio = servicioService.cambiarEstado(id, estado);
-            return ResponseEntity.ok(servicio);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<Servicio> cambiarEstado(@PathVariable Long id, @RequestParam EstadoServicio estado) {
+        Servicio servicio = servicioService.cambiarEstado(id, estado);
+        return ResponseEntity.ok(servicio);
     }
     
     // DELETE /api/servicios/{id} - Eliminar servicio
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminar(@PathVariable Long id) {
-        try {
-            servicioService.eliminar(id);
-            return ResponseEntity.ok().body("Servicio eliminado correctamente");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        servicioService.eliminar(id);
+        return ResponseEntity.noContent().build();
     }
 }

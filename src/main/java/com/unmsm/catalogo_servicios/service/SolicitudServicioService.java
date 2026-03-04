@@ -7,6 +7,8 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.unmsm.catalogo_servicios.exception.BadRequestException;
+import com.unmsm.catalogo_servicios.exception.ResourceNotFoundException;
 import com.unmsm.catalogo_servicios.model.Servicio;
 import com.unmsm.catalogo_servicios.model.SolicitudServicio;
 import com.unmsm.catalogo_servicios.model.Usuario;
@@ -27,61 +29,50 @@ public class SolicitudServicioService {
     @Autowired
     private ServicioRepository servicioRepository;
     
-    // Listar todas las solicitudes
     public List<SolicitudServicio> listarTodas() {
         return solicitudRepository.findAll();
     }
     
-    // Buscar solicitud por ID
     public Optional<SolicitudServicio> buscarPorId(Long id) {
         return solicitudRepository.findById(id);
     }
     
-    // Listar solicitudes de un usuario
     public List<SolicitudServicio> listarPorUsuario(Long usuarioId) {
         return solicitudRepository.findByUsuarioId(usuarioId);
     }
     
-    // Listar solicitudes de un usuario ordenadas por fecha
     public List<SolicitudServicio> listarPorUsuarioOrdenadas(Long usuarioId) {
         return solicitudRepository.findByUsuarioIdOrderByFechaSolicitudDesc(usuarioId);
     }
     
-    // Listar solicitudes por estado
     public List<SolicitudServicio> listarPorEstado(EstadoSolicitud estado) {
         return solicitudRepository.findByEstado(estado);
     }
     
-    // Crear nueva solicitud
     public SolicitudServicio crear(SolicitudServicio solicitud) {
-        // Cargar el usuario completo desde la BD
         if (solicitud.getUsuario() != null && solicitud.getUsuario().getId() != null) {
             Usuario usuario = usuarioRepository.findById(solicitud.getUsuario().getId())
-                .orElseThrow(() -> new RuntimeException("El usuario no existe"));
+                .orElseThrow(() -> new ResourceNotFoundException("El usuario no existe con ID: " + solicitud.getUsuario().getId()));
             solicitud.setUsuario(usuario);
         } else {
-            throw new RuntimeException("Debe especificar un usuario");
+            throw new BadRequestException("Debe especificar un usuario");
         }
         
-        // Cargar el servicio completo desde la BD
         if (solicitud.getServicio() != null && solicitud.getServicio().getId() != null) {
             Servicio servicio = servicioRepository.findById(solicitud.getServicio().getId())
-                .orElseThrow(() -> new RuntimeException("El servicio no existe"));
+                .orElseThrow(() -> new ResourceNotFoundException("El servicio no existe con ID: " + solicitud.getServicio().getId()));
             solicitud.setServicio(servicio);
         } else {
-            throw new RuntimeException("Debe especificar un servicio");
+            throw new BadRequestException("Debe especificar un servicio");
         }
         
-        // Establecer estado inicial
         solicitud.setEstado(EstadoSolicitud.PENDIENTE);
-        
         return solicitudRepository.save(solicitud);
     }
     
-    // Aprobar solicitud
     public SolicitudServicio aprobar(Long id, String observaciones) {
         SolicitudServicio solicitud = solicitudRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Solicitud no encontrada"));
+            .orElseThrow(() -> new ResourceNotFoundException("Solicitud no encontrada con ID: " + id));
         
         solicitud.setEstado(EstadoSolicitud.APROBADO);
         solicitud.setFechaRespuesta(LocalDateTime.now());
@@ -90,10 +81,9 @@ public class SolicitudServicioService {
         return solicitudRepository.save(solicitud);
     }
     
-    // Rechazar solicitud
     public SolicitudServicio rechazar(Long id, String observaciones) {
         SolicitudServicio solicitud = solicitudRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Solicitud no encontrada"));
+            .orElseThrow(() -> new ResourceNotFoundException("Solicitud no encontrada con ID: " + id));
         
         solicitud.setEstado(EstadoSolicitud.RECHAZADO);
         solicitud.setFechaRespuesta(LocalDateTime.now());
@@ -102,10 +92,9 @@ public class SolicitudServicioService {
         return solicitudRepository.save(solicitud);
     }
     
-    // Eliminar solicitud
     public void eliminar(Long id) {
         if (!solicitudRepository.existsById(id)) {
-            throw new RuntimeException("Solicitud no encontrada");
+            throw new ResourceNotFoundException("Solicitud no encontrada con ID: " + id);
         }
         solicitudRepository.deleteById(id);
     }

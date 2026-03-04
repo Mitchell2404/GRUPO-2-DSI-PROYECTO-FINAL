@@ -1,11 +1,15 @@
 package com.unmsm.catalogo_servicios.service;
 
-import com.unmsm.catalogo_servicios.model.CategoriaServicio;
-import com.unmsm.catalogo_servicios.repository.CategoriaServicioRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.unmsm.catalogo_servicios.exception.BadRequestException;
+import com.unmsm.catalogo_servicios.exception.ResourceNotFoundException;
+import com.unmsm.catalogo_servicios.model.CategoriaServicio;
+import com.unmsm.catalogo_servicios.repository.CategoriaServicioRepository;
 
 @Service
 public class CategoriaServicioService {
@@ -32,7 +36,7 @@ public class CategoriaServicioService {
     public CategoriaServicio guardar(CategoriaServicio categoria) {
         // Validar que el nombre no esté duplicado (solo al crear)
         if (categoria.getId() == null && categoriaRepository.existsByNombre(categoria.getNombre())) {
-            throw new RuntimeException("Ya existe una categoría con ese nombre");
+            throw new BadRequestException("Ya existe una categoría con ese nombre");
         }
         return categoriaRepository.save(categoria);
     }
@@ -40,7 +44,7 @@ public class CategoriaServicioService {
     // Eliminar categoría
     public void eliminar(Long id) {
         if (!categoriaRepository.existsById(id)) {
-            throw new RuntimeException("Categoría no encontrada");
+            throw new ResourceNotFoundException("Categoría no encontrada con ID: " + id);
         }
         categoriaRepository.deleteById(id);
     }
